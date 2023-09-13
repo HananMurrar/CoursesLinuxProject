@@ -1,6 +1,6 @@
 # linux shell script code for courses 
 
-#!/bin/bash
+# !/bin/bash
 
 # function to validate course id format
 validate_course_id() {
