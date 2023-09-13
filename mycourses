@@ -1,0 +1,140 @@
+# linux shell script code for courses 
+
+#!/bin/bash
+
+# function to validate course id format
+validate_course_id() {
+    local id=$1
+    if  [[ $id =~ ^[a-z]{4}[0-9]{3}$ ]]; then
+        echo "Invalid Course ID Forma Enter Valid ID (4 Letters Followed By 3 Digits)"
+        return 1
+    fi
+    
+    return 0
+}
+
+# function to validate book isbn format
+validate_book_isbn() {
+    local isbn=$1
+    if [[ ! $isbn =~ ^[0-9]{2}-[0-9]{3}-[0-9]{5}$ ]]; then
+        echo "Invalid Book ISBN Format Enter Valid ISBN Number (xx-xxx-xxxxx)"
+        return 1
+    fi
+
+    return 0
+}
+
+# function to delete a course by id
+delete_course() {
+    local id=$1
+    if grep -q "^$id|" courses.txt; then
+        sed -i "/^$id|/d" courses.txt
+        echo "Course Deleted Successfully"
+    else
+        echo "Course With ID '$id' Not Exist"
+    fi
+}
+
+# function to modify the isbn number of a course
+modify_isbn() {
+    local id=$1
+    local new_isbn=$2
+
+    if grep -q "^$id|" courses.txt; then
+        if validate_book_isbn "$new_isbn"; then
+            sed -i "s/^$id|[^|]*|$/$id|$(echo "$new_isbn" | sed 's/\//\\\//g')|/" courses.txt
+            echo "ISBN Number Modified Successfully"
+        fi
+    else
+        echo "Course With ID '$id' Not Exist"
+    fi
+}
+
+# function to display course information by id
+search_course_by_id() {
+    local id=$1
+    if grep -q "^$id|" courses.txt; then
+        grep "^$id|" courses.txt | awk -F '|' '{ printf "Course ID: %s\nCourse Name: %s\nISBN: %s\n", $1, $2, $3}'
+    else
+        echo "Course With ID '$id' Not Exist"
+    fi
+}
+
+# function to print all courses
+print_all_courses() {
+    awk -F '|' '{ printf "Course ID: %s\nCourse Name: %s\nISBN: %s\n", $1, $2, $3 }' courses.txt
+}
+
+# display menu options
+echo "Menu:"
+echo "1. Add New Course"
+echo "2. Modify Course"
+echo "3. Search Courses"
+echo "4. Print All Courses"
+echo "Enter Your Choice (1-4): "
+
+read choice
+
+case $choice in
+    1)
+        echo "Enter Course Details: "
+
+        while true; do
+            read -p "Course ID: " course_id
+            validate_course_id "$course_id" && break
+        done
+
+        read -p "Full Name: " full_name
+
+        while true; do
+            read -p "Book ISBN Number: " book_isbn
+            validate_book_isbn "$book_isbn" && break
+        done
+
+        echo "$course_id|$full_name|$book_isbn" >> courses.txt
+        echo "Course Added Successfully"
+        ;;
+    2)
+        echo "Modify Course: "
+        
+        echo "1. Delete A Course"
+        echo "2. Modify ISBN Number"
+        echo "Enter Your Choice (1-2): "
+        read modify_choice
+
+        case $modify_choice in
+            1)
+                echo "Enter Course ID To Delete: "
+                read course_id
+                delete_course "$course_id"
+                ;;
+            2)
+                echo "Enter Course ID To Modify The ISBN Number: "
+                read course_id
+
+                while true; do
+                    read -p "New Book ISBN Number: " new_isbn
+                    validate_book_isbn "$new_isbn" && break
+                done
+
+                modify_isbn "$course_id" "$new_isbn"
+                ;;
+            *)
+                echo "Invalid Choice"
+                ;;
+        esac
+        ;;
+    3)
+        echo "Enter Course ID To Search: "
+        read course_id
+        search_course_by_id "$course_id"
+        ;;
+    4)
+        echo "All Courses:"
+        print_all_courses
+        ;;
+    *)
+        echo "Invalid Choice"
+        ;;
+esac
+
